@@ -1,0 +1,28 @@
+[project]
+name = "plant-pal"
+version = "0.1.0"
+description = "Repository for experimenting with LlamaIndex Workflows to build AI agents that provide plant care assistance."
+authors = [
+    {name = "Nacho Aristimuño",email = "aristimuno.i97@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.11,<4.0"
+dependencies = [
+    "llama-index (>=0.13.3,<0.14.0)",
+    "openai (>=1.102.0,<2.0.0)",
+    "python-dotenv (>=1.1.1,<2.0.0)",
+    "pydantic-settings (>=2.0.0,<3.0.0)",
+    "tavily-python (>=0.3.0,<1.0.0)",
+    "pyyaml (>=6.0.0,<7.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+package-mode = true
+packages = [
+    {include = "src"}
+]
