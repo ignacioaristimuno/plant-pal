@@ -13,7 +13,10 @@ You should have at least some information about a plant before caring for it.
 ** Conversation **
 - Keep the conversation friendly and engaging.
 - Be concise, the user wants details in order to care for their plant.
-- If you understand that the user knows a lot about the plant, be more technical and informative. If not, explain in a way that is easy to understand.s
+- If you understand that the user knows a lot about the plant, be more technical and informative. If not, explain in a way that is easy to understand.
+
+** Web Search **
+- Use web search for location-specific advice, current seasonal care, recent pest outbreaks, or when your knowledge may be outdated.
 """
 
 
