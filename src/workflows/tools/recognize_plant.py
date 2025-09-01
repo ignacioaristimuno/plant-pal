@@ -1,10 +1,7 @@
 import logging
 from llama_index.core.llms import ChatMessage
-from llama_index.core.workflow import (
-    Context,
-    InputRequiredEvent,
-    HumanResponseEvent,
-)
+from llama_index.core.tools import FunctionTool
+from llama_index.core.workflow import Context
 
 from src.llm.client import vlm_client
 
@@ -20,16 +17,16 @@ The user message is: "{user_message}"
 """
 
 
-async def recognize_plant(ctx: Context) -> str:
-    """Recognize the plant in the image."""
-    logger.info(f"Context state keys: {list(ctx.state.keys())}")
-    logger.info(f"Context state: {ctx.state}")
-
-    if "image_bytes" not in ctx.state:
-        logger.error("No image_bytes found in context state")
+async def _recognize_plant_impl(ctx: Context) -> str:
+    """Internal implementation of plant recognition."""
+    logger.info("Plant recognition tool called")
+    
+    # Get image bytes from context store
+    img_bytes = await ctx.store.get("image_bytes")
+    
+    if img_bytes is None:
+        logger.error("No image_bytes found in context store")
         return "No image found in context. Please provide an image."
-
-    img_bytes = ctx.state["image_bytes"]
 
     # Log the image bytes info
     logger.info(f"Image type: {type(img_bytes)}")
@@ -57,6 +54,14 @@ async def recognize_plant(ctx: Context) -> str:
         ]
     )
 
-    async with ctx.store.edit_state() as ctx_state:
-        ctx_state["plant_recognition"]["recognition"] = response.content
-    return f"Plant recognized successfully."
+    # Store the recognition result in context store
+    await ctx.store.set("plant_recognition_result", response.message.content)
+    return response.message.content
+
+
+# Create the FunctionTool
+recognize_plant = FunctionTool.from_defaults(
+    async_fn=_recognize_plant_impl,
+    name="recognize_plant",
+    description="Identify a plant from an image that has been provided in the context. Use this tool when you need to analyze and identify a plant species from an image.",
+)

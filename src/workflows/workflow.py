@@ -2,7 +2,13 @@ import asyncio
 import base64
 import logging
 
-from llama_index.core.agent.workflow import AgentWorkflow
+from llama_index.core.agent.workflow import (
+    AgentWorkflow,
+    AgentStream,
+    AgentOutput,
+    ToolCallResult,
+    ToolCall,
+)
 from llama_index.core.schema import ImageDocument
 from llama_index.core.workflow import Context
 
@@ -32,6 +38,7 @@ agent_workflow = AgentWorkflow(
     initial_state={
         "plant_recognition": {},
         "plant_care": {},
+        "image_bytes": None,
     },
 )
 
@@ -56,6 +63,8 @@ if __name__ == "__main__":
     async def main():
         while True:
             user_message = input("User: ")
+            if user_message == "":
+                continue
             if user_message == "q":
                 break
 
@@ -63,36 +72,92 @@ if __name__ == "__main__":
                 # Process the image immediately
                 logger.info("Processing image request")
 
-                # Store image in the workflow's initial state
-                logger.info("Storing image in workflow initial state")
-                agent_workflow.initial_state["image_bytes"] = base64.b64decode(
-                    base64_image
-                )
-                logger.info(
-                    f"Image stored in workflow state: {len(agent_workflow.initial_state.get('image_bytes', b''))} bytes"
-                )
+                # Store image in the context store
+                logger.info("Storing image in context store")
+                img_bytes = base64.b64decode(base64_image)
+                await ctx.store.set("image_bytes", img_bytes)
+                logger.info(f"Image stored in context store: {len(img_bytes)} bytes")
 
                 # Use a message that will route to plant recognition
                 logger.info(
                     "Starting workflow with message: 'I have a plant image to identify'"
                 )
-                logger.info(f"Context store before workflow: {ctx.store}")
 
-                # Test if the router agent is working by trying a simple message first
-                logger.info("Testing router with simple message...")
-                test_response = await agent_workflow.run("help", ctx=ctx)
-                logger.info(f"Router test response: {test_response}")
-
-                response = await agent_workflow.run(
+                # Remove 'await' here - run() returns a handler, not a coroutine
+                handler = agent_workflow.run(
                     "I have a plant image to identify", ctx=ctx
                 )
 
+                current_agent = None
+                async for event in handler.stream_events():
+                    if (
+                        hasattr(event, "current_agent_name")
+                        and event.current_agent_name != current_agent
+                    ):
+                        current_agent = event.current_agent_name
+                        print(f"\n{'='*50}")
+                        print(f"🤖 Agent: {current_agent}")
+                        print(f"{'='*50}\n")
+
+                    if isinstance(event, AgentStream):
+                        if event.delta:
+                            print(event.delta, end="", flush=True)
+                    elif isinstance(event, AgentOutput):
+                        if event.response.content:
+                            print("📤 Output:", event.response.content)
+                        if event.tool_calls:
+                            print(
+                                "🛠️  Planning to use tools:",
+                                [call.tool_name for call in event.tool_calls],
+                            )
+                    elif isinstance(event, ToolCallResult):
+                        print(f"🔧 Tool Result ({event.tool_name}):")
+                        print(f"  Arguments: {event.tool_kwargs}")
+                        print(f"  Output: {event.tool_output}")
+                    elif isinstance(event, ToolCall):
+                        print(f"🔨 Calling Tool: {event.tool_name}")
+                        print(f"  With arguments: {event.tool_kwargs}")
+
+                # Get the final response
+                response = await handler
                 logger.info(f"Workflow response: {response}")
-                logger.info(f"Context store after workflow: {ctx.store}")
             else:
                 # Run the workflow with just the user message (no image)
-                response = await agent_workflow.run(user_message, ctx=ctx)
-            print(f"Agent: {response}")
+                handler = agent_workflow.run(user_message, ctx=ctx)
+
+                current_agent = None
+                async for event in handler.stream_events():
+                    if (
+                        hasattr(event, "current_agent_name")
+                        and event.current_agent_name != current_agent
+                    ):
+                        current_agent = event.current_agent_name
+                        print(f"\n{'='*50}")
+                        print(f"🤖 Agent: {current_agent}")
+                        print(f"{'='*50}\n")
+
+                    if isinstance(event, AgentStream):
+                        if event.delta:
+                            print(event.delta, end="", flush=True)
+                    elif isinstance(event, AgentOutput):
+                        if event.response.content:
+                            print("📤 Output:", event.response.content)
+                        if event.tool_calls:
+                            print(
+                                "🛠️  Planning to use tools:",
+                                [call.tool_name for call in event.tool_calls],
+                            )
+                    elif isinstance(event, ToolCallResult):
+                        print(f"🔧 Tool Result ({event.tool_name}):")
+                        print(f"  Arguments: {event.tool_kwargs}")
+                        print(f"  Output: {event.tool_output}")
+                    elif isinstance(event, ToolCall):
+                        print(f"🔨 Calling Tool: {event.tool_name}")
+                        print(f"  With arguments: {event.tool_kwargs}")
+
+                # Get the final response
+                response = await handler
+                print(f"Agent: {response}")
 
     # Run the async main function
     asyncio.run(main())
