@@ -1,32 +1,54 @@
-# Plant Pal – LLM-powered multi-agent assistant
+# Plant Pal
 
-This repository contains a *very* small starting point for a multi-agent plant
-assistant built on top of **FastAPI** and **LlamaIndex**.  The idea is to keep
-the web layer minimal so that you can iterate on your agents and retrieval
-pipelines without being slowed down by infrastructure questions.
+AI-powered plant care assistant that provides plant identification and care guidance using LlamaIndex workflows.
 
-Highlighted features
+## Features
 
-* `POST /chat` – conversational endpoint (powered by a placeholder chat agent).
-* `POST /identify` – upload a picture of a plant and receive the most likely
-  candidates.  The current implementation is a placeholder that you can swap
-  for a Pinecone-backed vector search later on.
-* `GET /care` – retrieve care instructions for a given plant.
+- **Plant Recognition**: Upload plant images for AI-powered species identification
+- **Plant Care**: Get personalized care instructions based on identified plants
+- **Multi-language Support**: Receive responses in your preferred language
+- **Real-time Chat**: Interactive chat interface with streaming responses
+- **RESTful API**: FastAPI backend with session management
 
-Running locally
+## Architecture
 
+Built with LlamaIndex workflows featuring:
+- **Router Agent**: Routes queries to appropriate specialized agents
+- **Plant Recognition Agent**: Identifies plant species from images using vision models
+- **Plant Care Agent**: Provides detailed care instructions and advice
+- **Web Search Tool**: Retrieves up-to-date plant care information
+
+## Quick Start
+
+### Docker
 ```bash
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
+docker-compose up --build
 ```
 
-Open <http://localhost:8000/docs> to play with the interactive Swagger UI.
+### Local Development
+```bash
+# Install dependencies
+poetry install
 
-Next steps
+# Set environment variables
+cp .env.example .env
+# Edit .env with your API keys
 
-1. Replace the stubs in `app/agents.py` with real LlamaIndex workflows.
-2. Hook up Pinecone for vector similarity in `PlantIdentifier.identify`.
-3. Add a memory store to `/chat` so that the assistant keeps track of the
-   conversation state.
+# Run the API
+poetry run python -m uvicorn src.app.main:app --reload --host 0.0.0.0 --port 8000
+```
 
-Have fun hacking! 🌱
+## API Endpoints
+
+- `POST /chat` - Send messages and images for plant assistance
+- `POST /sessions` - Create new chat sessions
+- `GET /sessions/{session_id}` - Retrieve session history
+- `GET /health` - Health check endpoint
+
+## Requirements
+
+- Python 3.11+
+- OpenAI API key
+- Tavily API key (for web search)
+
+Visit `http://localhost:8000/docs` for interactive API documentation.
