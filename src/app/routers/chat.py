@@ -8,6 +8,13 @@ from llama_index.core.llms import ChatMessage as LlamaChatMessage
 from src.app.controller.state import get_or_create_session
 from src.app.models.responses import ChatResponse
 from src.app.models.messages import ChatMessage, ImageChatMessage
+from src.app.controller.exceptions import (
+    NonValidMessageException,
+    NonValidSessionException,
+    WorkflowExecutionException,
+    ValidationException
+)
+from src.app.controller.validations import is_valid_message, is_valid_session_id, is_valid_image_file
 from src.settings.logger import custom_logger
 from src.workflows.events import (
     OutputEvent,
@@ -30,6 +37,17 @@ router = APIRouter(tags=["Chat"])
 @router.post("/chat", response_model=ChatResponse)
 async def chat(chat_request: ChatMessage):
     try:
+        # Validate message
+        message_validation = is_valid_message(chat_request.message)
+        if not message_validation["is_valid"]:
+            raise NonValidMessageException(message_validation["message"], chat_request.message)
+        
+        # Validate session_id if provided
+        if chat_request.session_id:
+            session_validation = is_valid_session_id(chat_request.session_id)
+            if not session_validation["is_valid"]:
+                raise NonValidSessionException(session_validation["message"], chat_request.session_id)
+        
         print(f"DEBUG: Chat endpoint hit with message: {chat_request.message[:50]}...")
         logger.info(f"Received chat request: {chat_request.message[:50]}..., language: {chat_request.language}")
         session_id, session_data = get_or_create_session(chat_request.session_id)
@@ -91,9 +109,15 @@ async def chat(chat_request: ChatMessage):
 
         return ChatResponse(response=response_content, session_id=session_id)
 
+    except (NonValidMessageException, NonValidSessionException, ValidationException) as e:
+        logger.warning(f"Validation error in chat endpoint: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except WorkflowExecutionException as e:
+        logger.error(f"Workflow execution error in chat endpoint: {e}")
+        raise HTTPException(status_code=500, detail="Workflow execution failed")
     except Exception as e:
-        logger.error(f"Error in chat endpoint: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Unexpected error in chat endpoint: {e}")
+        raise WorkflowExecutionException("Chat processing failed", workflow_error=e)
 
 
 @router.post("/chat/image", response_model=ChatResponse)
@@ -104,14 +128,30 @@ async def chat_with_image(
     language: Optional[str] = Form("en")
 ):
     try:
-        if not image.content_type or not image.content_type.startswith("image/"):
-            raise HTTPException(status_code=400, detail="File must be an image")
+        # Validate message
+        if message:
+            message_validation = is_valid_message(message)
+            if not message_validation["is_valid"]:
+                raise NonValidMessageException(message_validation["message"], message)
+        
+        # Validate session_id if provided
+        if session_id:
+            session_validation = is_valid_session_id(session_id)
+            if not session_validation["is_valid"]:
+                raise NonValidSessionException(session_validation["message"], session_id)
+        
+        # Read image to get size for validation
+        image_bytes = await image.read()
+        
+        # Validate image file
+        image_validation = is_valid_image_file(image.content_type, len(image_bytes))
+        if not image_validation["is_valid"]:
+            raise ValidationException(image_validation["message"], field="image", value=image.filename)
 
         logger.info(f"Image chat request - message: {message[:50]}..., language: {language}")
         session_id, session_data = get_or_create_session(session_id)
 
-        # Store image in session
-        image_bytes = await image.read()
+        # Store image in session (already read above for validation)
         session_data.image_bytes = image_bytes
         
         logger.info(f"Image stored in session {session_id}: {len(image_bytes)} bytes")
@@ -170,15 +210,32 @@ async def chat_with_image(
 
         return ChatResponse(response=response_content, session_id=session_id)
 
+    except (NonValidMessageException, NonValidSessionException, ValidationException) as e:
+        logger.warning(f"Validation error in image chat endpoint: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except WorkflowExecutionException as e:
+        logger.error(f"Workflow execution error in image chat endpoint: {e}")
+        raise HTTPException(status_code=500, detail="Workflow execution failed")
     except Exception as e:
-        logger.error(f"Error in image chat endpoint: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Unexpected error in image chat endpoint: {e}")
+        raise WorkflowExecutionException("Image chat processing failed", workflow_error=e)
 
 
 @router.post("/chat/stream")
 async def chat_stream(chat_request: ChatMessage):
     """Stream chat responses with real-time workflow events."""
     try:
+        # Validate message
+        message_validation = is_valid_message(chat_request.message)
+        if not message_validation["is_valid"]:
+            raise NonValidMessageException(message_validation["message"], chat_request.message)
+        
+        # Validate session_id if provided
+        if chat_request.session_id:
+            session_validation = is_valid_session_id(chat_request.session_id)
+            if not session_validation["is_valid"]:
+                raise NonValidSessionException(session_validation["message"], chat_request.session_id)
+        
         logger.info(f"Streaming chat request: {chat_request.message[:50]}..., language: {chat_request.language}")
         session_id, session_data = get_or_create_session(chat_request.session_id)
         
@@ -244,6 +301,12 @@ async def chat_stream(chat_request: ChatMessage):
             }
         )
 
+    except (NonValidMessageException, NonValidSessionException, ValidationException) as e:
+        logger.warning(f"Validation error in streaming chat endpoint: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except WorkflowExecutionException as e:
+        logger.error(f"Workflow execution error in streaming chat endpoint: {e}")
+        raise HTTPException(status_code=500, detail="Workflow execution failed")
     except Exception as e:
-        logger.error(f"Error in streaming chat endpoint: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Unexpected error in streaming chat endpoint: {e}")
+        raise WorkflowExecutionException("Streaming chat processing failed", workflow_error=e)

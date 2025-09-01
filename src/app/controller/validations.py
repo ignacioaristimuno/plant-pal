@@ -13,7 +13,7 @@ logger = custom_logger("Validations Controller")
 HARMFUL_PATTERNS = [
     re.compile(r"<script.*?</script>", re.IGNORECASE | re.DOTALL),
     re.compile(r"javascript:", re.IGNORECASE),
-    re.compile(r"on\w+\s*=", re.IGNORECASE),  # Event handlers
+    re.compile(r"<[^>]*on\w+\s*=", re.IGNORECASE),
     re.compile(r"<iframe.*?</iframe>", re.IGNORECASE | re.DOTALL),
     re.compile(r"<object.*?</object>", re.IGNORECASE | re.DOTALL),
     re.compile(r"<embed.*?>", re.IGNORECASE),
@@ -61,7 +61,7 @@ def is_valid_message(message: Optional[str]) -> dict[str, bool]:
         return {"is_valid": False, "message": "Message is required"}
 
     # Check message length (reasonable bounds)
-    if len(cleaned_message) > 2000:
+    if len(cleaned_message) > 500:
         logger.warning(
             f"Message validation failed: message too long ({len(cleaned_message)} chars)"
         )
@@ -196,3 +196,47 @@ def sanitize_message(message: str) -> str:
     sanitized = re.sub(r"\s+", " ", sanitized)
 
     return sanitized.strip()
+
+
+def is_valid_image_file(content_type: Optional[str], file_size: int) -> dict[str, bool]:
+    """
+    Validate if an uploaded file is a valid image.
+
+    Args:
+        content_type: MIME type of the uploaded file
+        file_size: Size of the file in bytes
+
+    Returns:
+        dict: Validation result with is_valid and message
+    """
+    # Check content type
+    if not content_type:
+        logger.warning("Image validation failed: no content type")
+        return {"is_valid": False, "message": "File content type is required"}
+
+    if not content_type.startswith("image/"):
+        logger.warning(f"Image validation failed: invalid content type {content_type}")
+        return {"is_valid": False, "message": "File must be an image"}
+
+    # Check for allowed image types
+    allowed_types = ["image/jpeg", "image/png", "image/gif", "image/webp"]
+    if content_type not in allowed_types:
+        logger.warning(
+            f"Image validation failed: unsupported image type {content_type}"
+        )
+        return {"is_valid": False, "message": "Unsupported image format"}
+
+    # Check file size (max 10MB)
+    max_size = 10 * 1024 * 1024  # 10MB
+    if file_size > max_size:
+        logger.warning(f"Image validation failed: file too large {file_size} bytes")
+        return {"is_valid": False, "message": "Image file is too large"}
+
+    # Check minimum file size (1KB)
+    min_size = 1024  # 1KB
+    if file_size < min_size:
+        logger.warning(f"Image validation failed: file too small {file_size} bytes")
+        return {"is_valid": False, "message": "Image file is too small"}
+
+    logger.debug("Image validation passed")
+    return {"is_valid": True, "message": "Image file is valid"}
