@@ -11,7 +11,7 @@ from src.workflows.workflow import agent_workflow
 
 
 # Set up logger
-logger = custom_logger(__name__)
+logger = custom_logger("State Controller")
 
 # Sessions
 sessions: Dict[str, SessionData] = {}

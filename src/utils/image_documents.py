@@ -7,7 +7,7 @@ from src.settings.logger import custom_logger
 
 
 # Set up logger
-logger = custom_logger(__name__)
+logger = custom_logger("Image Documents Utils")
 
 
 def create_image_document_from_base64(

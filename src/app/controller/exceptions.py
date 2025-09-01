@@ -3,6 +3,13 @@
 from typing import Any, Dict, Optional
 
 
+from src.settings.logger import custom_logger
+
+
+# Set up logger
+logger = custom_logger("Exceptions Controller")
+
+
 class PlantPalAPIException(Exception):
     """
     Base exception class for PlantPal API.

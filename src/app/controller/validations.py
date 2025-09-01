@@ -7,7 +7,7 @@ from src.settings.logger import custom_logger
 
 
 # Initialize logger
-logger = custom_logger(__name__)
+logger = custom_logger("Validations Controller")
 
 # Compilation of regex patterns for performance
 HARMFUL_PATTERNS = [

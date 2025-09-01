@@ -1,4 +1,5 @@
 from logging import DEBUG, Formatter, Logger, StreamHandler, getLogger
+import sys
 
 
 def custom_logger(logger_name: str) -> Logger:
@@ -17,10 +18,10 @@ def custom_logger(logger_name: str) -> Logger:
         Logger: A configured logger instance with the specified name.
     """
 
-    logger = getLogger(f"{logger_name} - ")
+    logger = getLogger(f" {logger_name} - ")
     logger.setLevel(DEBUG)
     if not logger.hasHandlers():
-        console_handler = StreamHandler()
+        console_handler = StreamHandler(sys.stdout)  # Explicitly use stdout
         console_handler.setLevel(DEBUG)
         formatter = Formatter(
             "%(asctime)s - %(name)s%(levelname)s: %(message)s",

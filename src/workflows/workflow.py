@@ -22,7 +22,7 @@ from src.settings.logger import custom_logger
 
 
 # Set up logger
-logger = custom_logger(__name__)
+logger = custom_logger("Main Workflow")
 
 # Enable LlamaIndex debug logging
 logging.getLogger("llama_index").setLevel(logging.DEBUG)

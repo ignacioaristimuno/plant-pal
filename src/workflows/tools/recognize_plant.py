@@ -7,7 +7,7 @@ from src.llm.client import vlm_client
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("PlantRecognitionAgent")
 
 
 PLANT_RECOGNITION_PROMPT = """What type of plant is this?

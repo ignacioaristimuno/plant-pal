@@ -5,7 +5,7 @@ from src.llm.client import llm_client
 from src.workflows.tools import recognize_plant
 
 # Set up logging
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("PlantRouterAgent")
 
 
 PLANT_ROUTER_SYSTEM_PROMPT = """
