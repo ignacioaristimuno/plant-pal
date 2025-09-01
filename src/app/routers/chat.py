@@ -27,7 +27,11 @@ router = APIRouter(tags=["Chat"])
 @router.post("/chat", response_model=ChatResponse)
 async def chat(chat_request: ChatMessage):
     try:
+        print(f"DEBUG: Chat endpoint hit with message: {chat_request.message[:50]}...")
+        logger.info(f"Received chat request: {chat_request.message[:50]}...")
         session_id, session_data = get_or_create_session(chat_request.session_id)
+        print(f"DEBUG: Using session: {session_id}")
+        logger.info(f"Using session: {session_id}")
 
         # Use the workflow's built-in memory - just pass the current message
         handler = agent_workflow.run(chat_request.message, ctx=session_data.ctx)

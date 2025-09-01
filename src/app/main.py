@@ -1,5 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+import time
 
 from src.app.routers import chat_router, health_router, sessions_router
 from src.settings.logger import custom_logger
@@ -23,6 +24,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start_time = time.time()
+    print(f"DEBUG: Incoming request: {request.method} {request.url}")
+    logger.info(f"Incoming request: {request.method} {request.url}")
+    
+    response = await call_next(request)
+    
+    process_time = time.time() - start_time
+    print(f"DEBUG: Request completed in {process_time:.4f}s - Status: {response.status_code}")
+    logger.info(f"Request completed in {process_time:.4f}s - Status: {response.status_code}")
+    
+    return response
+
 # Include routers
 app.include_router(chat_router)
 app.include_router(health_router)
@@ -39,4 +54,10 @@ async def startup_event():
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(
+        app, 
+        host="0.0.0.0", 
+        port=8000, 
+        log_level="debug",
+        access_log=True
+    )

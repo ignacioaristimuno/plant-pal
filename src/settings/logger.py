@@ -20,14 +20,18 @@ def custom_logger(logger_name: str) -> Logger:
 
     logger = getLogger(f" {logger_name} - ")
     logger.setLevel(DEBUG)
-    if not logger.hasHandlers():
-        console_handler = StreamHandler(sys.stdout)  # Explicitly use stdout
-        console_handler.setLevel(DEBUG)
-        formatter = Formatter(
-            "%(asctime)s - %(name)s%(levelname)s: %(message)s",
-            datefmt="%m/%d/%Y %I:%M:%S%p",
-        )
-        console_handler.setFormatter(formatter)
-        logger.addHandler(console_handler)
-    logger.propagate = True  # Enable propagation to parent loggers
+    
+    # Force handler creation even if handlers exist to ensure Docker compatibility
+    console_handler = StreamHandler(sys.stdout)
+    console_handler.setLevel(DEBUG)
+    formatter = Formatter(
+        "%(asctime)s - %(name)s%(levelname)s: %(message)s",
+        datefmt="%m/%d/%Y %I:%M:%S%p",
+    )
+    console_handler.setFormatter(formatter)
+    
+    # Clear existing handlers and add new one for Docker
+    logger.handlers.clear()
+    logger.addHandler(console_handler)
+    logger.propagate = False  # Disable propagation for Docker to avoid duplicate logs
     return logger

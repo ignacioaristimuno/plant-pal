@@ -1,15 +1,17 @@
-import logging
 from llama_index.core.llms import ChatMessage
 from llama_index.core.tools import FunctionTool
 from llama_index.core.workflow import Context
 
 from src.llm.client import vlm_client
-
-# Set up logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("PlantRecognitionAgent")
+from src.app.models.messages import ChatMessage
+from src.settings.logger import custom_logger
 
 
+# Set up logger
+logger = custom_logger("PlantRecognitionAgent")
+
+
+# Prompt
 PLANT_RECOGNITION_PROMPT = """What type of plant is this?
 Be concise, and describe a bit of its peculiarities and care requirements.
 
@@ -17,6 +19,7 @@ The user message is: "{user_message}"
 """
 
 
+# Tool implementation
 async def _recognize_plant_impl(ctx: Context) -> str:
     """Internal implementation of plant recognition."""
     logger.info("Plant recognition tool called")
