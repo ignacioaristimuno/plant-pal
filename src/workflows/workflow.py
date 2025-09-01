@@ -9,26 +9,23 @@ from llama_index.core.agent.workflow import (
     ToolCallResult,
     ToolCall,
 )
-from llama_index.core.schema import ImageDocument
 from llama_index.core.workflow import Context
 
-# Set up logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+from src.workflows.agents import (
+    plant_router_agent,
+    plant_recognition_agent,
+    plant_care_agent,
 )
-logger = logging.getLogger(__name__)
+from src.utils.image_documents import run_workflow_with_base64_image
+
+from src.settings.logger import custom_logger
+
+
+# Set up logger
+logger = custom_logger(__name__)
 
 # Enable LlamaIndex debug logging
 logging.getLogger("llama_index").setLevel(logging.DEBUG)
-logging.getLogger("workflows").setLevel(logging.DEBUG)
-
-from src.workflows.agents.router.agent import plant_router_agent
-from src.workflows.agents.plant_recognition.agent import plant_recognition_agent
-from src.workflows.agents.plant_care.agent import plant_care_agent
-from src.utils.image_documents import (
-    run_workflow_with_base64_image,
-    create_image_document_from_base64,
-)
 
 
 # Create the agent workflow
@@ -60,12 +57,15 @@ if __name__ == "__main__":
     with open("images/my_plant.jpeg", "rb") as f:
         base64_image = base64.b64encode(f.read()).decode("utf-8")
 
+    # Store image data that can be reused
+    img_bytes = base64.b64decode(base64_image)
+
     async def main():
         while True:
             user_message = input("User: ")
             if user_message == "":
                 continue
-            if user_message == "q":
+            elif user_message == "q":
                 break
 
             elif user_message == "img":

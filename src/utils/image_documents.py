@@ -1,12 +1,13 @@
 import base64
-import logging
 
 from llama_index.core.schema import ImageDocument
 from llama_index.core.workflow import Context
 
-# Set up logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+from src.settings.logger import custom_logger
+
+
+# Set up logger
+logger = custom_logger(__name__)
 
 
 def create_image_document_from_base64(
