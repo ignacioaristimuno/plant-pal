@@ -29,21 +29,8 @@ async def chat(chat_request: ChatMessage):
     try:
         session_id, session_data = get_or_create_session(chat_request.session_id)
 
-        # Build context message with conversation history
-        context_message = ""
-        if session_data.conversation_history:
-            context_message = "Previous conversation context:\n"
-            for msg in session_data.conversation_history[
-                -5:
-            ]:  # Last 5 messages for context
-                context_message += (
-                    f"User: {msg['user']}\nAssistant: {msg['assistant']}\n\n"
-                )
-            context_message += f"Current question: {chat_request.message}"
-        else:
-            context_message = chat_request.message
-
-        handler = agent_workflow.run(context_message, ctx=session_data.ctx)
+        # Use the workflow's built-in memory - just pass the current message
+        handler = agent_workflow.run(chat_request.message, ctx=session_data.ctx)
 
         response_content = ""
         current_agent = None
@@ -70,11 +57,6 @@ async def chat(chat_request: ChatMessage):
         final_response = await handler
         if not response_content and final_response:
             response_content = str(final_response)
-
-        # Store conversation in history
-        session_data.conversation_history.append(
-            {"user": chat_request.message, "assistant": response_content}
-        )
 
         return ChatResponse(response=response_content, session_id=session_id)
 
@@ -98,21 +80,8 @@ async def chat_with_image(
 
         logger.info(f"Image stored in session {session_id}: {len(image_bytes)} bytes")
 
-        # Build context message with conversation history
-        context_message = ""
-        if session_data.conversation_history:
-            context_message = "Previous conversation context:\n"
-            for msg in session_data.conversation_history[
-                -5:
-            ]:  # Last 5 messages for context
-                context_message += (
-                    f"User: {msg['user']}\nAssistant: {msg['assistant']}\n\n"
-                )
-            context_message += "Current request: I have a plant image to identify"
-        else:
-            context_message = "I have a plant image to identify"
-
-        handler = agent_workflow.run(context_message, ctx=session_data.ctx)
+        # Use the workflow's built-in memory - just pass the current message
+        handler = agent_workflow.run("I have a plant image to identify", ctx=session_data.ctx)
 
         response_content = ""
         current_agent = None
@@ -139,14 +108,6 @@ async def chat_with_image(
         final_response = await handler
         if not response_content and final_response:
             response_content = str(final_response)
-
-        # Store conversation in history
-        session_data.conversation_history.append(
-            {
-                "user": "Uploaded plant image for identification",
-                "assistant": response_content,
-            }
-        )
 
         return ChatResponse(response=response_content, session_id=session_id)
 

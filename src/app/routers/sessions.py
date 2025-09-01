@@ -28,10 +28,22 @@ async def get_session_status(session_id: str):
     except:
         store_data["has_image"] = False
     
+    # Try to get memory info from the workflow's built-in memory
+    memory_info = {}
+    try:
+        memory = await session_data.ctx.store.get("memory")
+        if memory:
+            memory_info["has_memory"] = True
+            if hasattr(memory, "get_all"):
+                messages = memory.get_all()
+                memory_info["message_count"] = len(messages)
+    except:
+        memory_info["has_memory"] = False
+    
     return {
         "session_id": session_id,
         "active": True,
-        "conversation_history_length": len(session_data.conversation_history),
+        "memory_info": memory_info,
         "store_data": store_data
     }
 
