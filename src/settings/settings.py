@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     tavily_api_key: str | None = Field(None, description="Tavily API key")
 
     # Model configurations (from YAML)
-    openai_text_model: str = "gpt-5-mini"
+    openai_text_model: str = "gpt-4.1-mini"
     openai_vision_model: str = "gpt-4.1"
 
     class Config:
